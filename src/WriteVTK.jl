@@ -18,10 +18,9 @@ import TranscodingStreams
 
 using LightXML
 
-using Printf: @sprintf
 using Base64: base64encode
 
-import Base: close, isopen
+import Base: close, isopen, show
 
 # Cell type definitions as in vtkCellType.h
 include("VTKCellTypes.jl")
@@ -60,6 +59,11 @@ struct DatasetFile <: VTKFile
     end
 end
 
+function show(io::IO, vtk::DatasetFile)
+    open_str = isopen(vtk) ? "open" : "closed"
+    print(io, "VTK file '$(vtk.path)' ($(vtk.grid_type) file, $open_str)")
+end
+
 struct MultiblockFile <: VTKFile
     xdoc::XMLDocument
     path::String
@@ -94,17 +98,16 @@ isopen(vtk::VTKFile) = (vtk.xdoc.ptr != C_NULL)
 
 # Add a default extension to the filename,
 # unless the user have already given the correct one
-function add_extension(filename, default_extension)
+function add_extension(filename, default_extension) :: String
     path, ext = splitext(filename)
-    if ext != default_extension
-        if ext in ("vtu", "vtr", "vts", "vti", "pvd", "vtm")
-            warn("detected extension '$(ext)' does not correspond to dataset type. ",
-                "Appending '$(default_extension)' to filename.")
-        end
-        return filename * default_extension
-    else
+    if ext == default_extension
         return filename
     end
+    if !isempty(ext)
+        @warn("detected extension '$(ext)' does not correspond to " *
+              "dataset type.\nAppending '$(default_extension)' to filename.")
+    end
+    filename * default_extension
 end
 
 # Multiblock-specific functions and types.
@@ -124,6 +127,20 @@ include("gridtypes/common.jl")
 # This allows using do-block syntax for generation of VTK files.
 for func in (:vtk_grid, :vtk_multiblock, :paraview_collection)
     @eval begin
+        """
+            $($func)(f::Function, args...; kwargs...)
+
+        Create VTK file and apply `f` to it.
+        The file is automatically closed by the end of the call.
+
+        This allows to use the do-block syntax for creating VTK files:
+
+        ```julia
+        saved_files = $($func)(args...; kwargs...) do vtk
+            # do stuff with the `vtk` file handler
+        end
+        ```
+        """
         function ($func)(f::Function, args...; kwargs...)
             vtk = ($func)(args...; kwargs...)
             local outfiles

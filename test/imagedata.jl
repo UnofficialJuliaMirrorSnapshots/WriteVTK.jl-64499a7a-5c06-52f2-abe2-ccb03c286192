@@ -46,7 +46,35 @@ function main()
         vtk_point_data(vtk, vec, "myVector")
         vtk_cell_data(vtk, cdata, "myCellData")
     end
-    println("Saved:   ", outfiles...)
+
+    # Test 2D dataset
+    @time outfiles_2D = vtk_grid(vtk_filename_noext * "_2D", Ni, Nj,
+                                 # extent=extent[1:2],  # doesn't work for now (TODO)
+                                 origin=origin[1:2], spacing=spacing[1:2]) do vtk
+        vtk_point_data(vtk, p[:, :, 1], "p_values")
+        vtk_point_data(vtk, vec[:, :, :, 1], "myVector")
+        vtk_cell_data(vtk, cdata[:, :, 1], "myCellData")
+    end
+
+    append!(outfiles, outfiles_2D)
+
+    # Test specifying coordinates using LinRange
+    let xyz = (LinRange(0., 5., Ni), LinRange(1., 3., Nj), LinRange(2., 6., Nk))
+        @time outfiles_LR = vtk_grid(vtk_filename_noext * "_LinRange", xyz) do vtk
+            vtk_point_data(vtk, vec, "myVector")
+            vtk_cell_data(vtk, cdata, "myCellData")
+        end
+        append!(outfiles, outfiles_LR)
+    end
+
+    # Similar using StepRangeLen
+    let xyz = (0:0.08:5, 1.2:0.05:2., 1.2:0.1:2.)
+        @time outfiles_SR = vtk_grid(vtk_filename_noext * "_StepRangeLen", xyz) do vtk
+        end
+        append!(outfiles, outfiles_SR)
+    end
+
+    println("Saved:   ", join(outfiles, "  "))
 
     return outfiles::Vector{String}
 end

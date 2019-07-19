@@ -138,6 +138,17 @@ vtk = vtk_grid("my_vti_file", Nx, Ny, Nz, origin=origin, spacing=spacing)
 vtk_save(vtk)
 ```
 
+Coordinates may also be specified using ranges (more precisely, any subtype of `AbstractRange`).
+Some examples:
+
+```julia
+# Using StepRangeLen objects
+vtk_grid("vti_file_1", 0:0.1:10, 0:0.2:10, 1:0.3:4)
+
+# Using LinRange objects
+vtk_grid("vti_file_2", LinRange(0, 4.2, 10), LinRange(1, 3.1, 42), LinRange(0.2, 12.1, 32))
+```
+
 ## Usage: julia array
 
 A convenience function is provided to quickly save Julia arrays as image data:
@@ -264,7 +275,7 @@ outfiles = vtk_save(vtmfile)
 ```
 
 Assuming that the two blocks are structured grids, this generates the files
-`my_vtm_file.vtm`, `my_vtm_file.z01.vts` and `my_vtm_file.z02.vts`, where the
+`my_vtm_file.vtm`, `my_vtm_file_1.vts` and `my_vtm_file_2.vts`, where the
 `vtm` file points to the two `vts` files.
 
 
@@ -292,7 +303,7 @@ vtk_save(pvd)
 
 ## Do-block syntax
 
-[Do-block syntax](http://docs.julialang.org/en/release-0.5/manual/functions/#do-block-syntax-for-function-arguments)
+[Do-block syntax](https://docs.julialang.org/en/latest/manual/functions/#Do-Block-Syntax-for-Function-Arguments-1)
 is supported by `vtk_grid`, `vtk_multiblock` and `paraview_collection`.
 At the end of the do-block, `vtk_save` is called implicitly on the generated
 VTK object.
